@@ -2,35 +2,121 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Мета-тег для правильного отображения на мобильных устройствах -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>QR Scanner</title>
-    <!-- Подключаем скрипт Telegram Web Apps -->
+
+    <!-- Подключаем API Telegram Web Apps -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <!-- Подключаем библиотеку для сканирования QR -->
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+
+    <style>
+        /* Адаптация под тему Telegram */
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--tg-theme-bg-color, #ffffff);
+            color: var(--tg-theme-text-color, #000000);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        #reader {
+            width: 100%;
+            max-width: 500px;
+            border: none !important;
+        }
+
+        /* Кастомизация интерфейса сканера */
+        #reader video {
+            border-radius: 16px;
+            object-fit: cover;
+        }
+
+        .status-text {
+            margin-top: 20px;
+            font-size: 16px;
+            text-align: center;
+            padding: 0 20px;
+            color: var(--tg-theme-hint-color, #999999);
+        }
+
+        /* Скрываем лишние элементы библиотеки html5-qrcode */
+        #reader__dashboard_section_csr span,
+        #reader__dashboard_section_swaplink {
+            display: none !important;
+        }
+    </style>
 </head>
 <body>
+
+    <div id="reader"></div>
+    <div class="status-text" id="status">Наведите камеру на QR-код</div>
+
     <script>
-        // Инициализируем Web App
+        // Инициализация Telegram Web App
         const tg = window.Telegram.WebApp;
+
+        // Разворачиваем приложение на весь экран
+        tg.expand();
+
+        // Сообщаем Telegram, что приложение готово
         tg.ready();
 
-        // Параметры для сканера (можно добавить текст-подсказку)
-        const scanParams = {
-            text: "Наведите камеру на QR-код клиента"
-        };
+        const statusEl = document.getElementById('status');
+        let html5QrCode;
 
-        // Запускаем нативный сканер QR Telegram
-        tg.showScanQrPopup(scanParams, function(qrText) {
-            // Эта функция вызовется, когда камера поймает QR-код
-            // Закрываем сканер
-            tg.closeScanQrPopup();
+        // Функция успешного сканирования
+        function onScanSuccess(decodedText, decodedResult) {
+            // 1. Останавливаем сканер, чтобы не отправить код дважды
+            html5QrCode.stop().then(() => {
 
-            // Отправляем распознанный текст обратно в бота
-            tg.sendData(qrText);
+                // 2. Даем тактильный отклик (вибрация успеха)
+                tg.HapticFeedback.notificationOccurred('success');
+                statusEl.innerText = "Успешно! Отправка...";
+                statusEl.style.color = "var(--tg-theme-button-color, #2481cc)";
 
-            // Закрываем Web App
-            tg.close();
-            return true; // возвращаем true, чтобы попап закрылся
-        });
+                // 3. Отправляем данные в бота. 
+                // Метод sendData автоматически закрывает Web App после отправки!
+                tg.sendData(decodedText);
+
+            }).catch((err) => {
+                console.error("Ошибка остановки сканера", err);
+            });
+        }
+
+        // Функция инициализации камеры
+        function startScanner() {
+            html5QrCode = new Html5Qrcode("reader");
+            const config = { 
+                fps: 10, 
+                qrbox: { width: 250, height: 250 },
+                aspectRatio: 1.0
+            };
+
+            // Запускаем заднюю камеру
+            html5QrCode.start(
+                { facingMode: "environment" }, 
+                config, 
+                onScanSuccess
+            ).catch((err) => {
+                // Если юзер запретил доступ к камере или камеры нет
+                statusEl.innerText = "Ошибка: Нет доступа к камере. Разрешите доступ в настройках устройства.";
+                statusEl.style.color = "var(--tg-theme-destructive-text-color, #ff3b30)";
+
+                // Вибрация ошибки
+                tg.HapticFeedback.notificationOccurred('error');
+            });
+        }
+
+        // Запускаем сканер при загрузке страницы
+        window.onload = startScanner;
     </script>
 </body>
 </html>
