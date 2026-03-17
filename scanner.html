@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Scanner</title>
+    <!-- Подключаем скрипт Telegram Web Apps -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+    <script>
+        // Инициализируем Web App
+        const tg = window.Telegram.WebApp;
+        tg.ready();
+
+        // Параметры для сканера (можно добавить текст-подсказку)
+        const scanParams = {
+            text: "Наведите камеру на QR-код клиента"
+        };
+
+        // Запускаем нативный сканер QR Telegram
+        tg.showScanQrPopup(scanParams, function(qrText) {
+            // Эта функция вызовется, когда камера поймает QR-код
+            // Закрываем сканер
+            tg.closeScanQrPopup();
+
+            // Отправляем распознанный текст обратно в бота
+            tg.sendData(qrText);
+
+            // Закрываем Web App
+            tg.close();
+            return true; // возвращаем true, чтобы попап закрылся
+        });
+    </script>
+</body>
+</html>
