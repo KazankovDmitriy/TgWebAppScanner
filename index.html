@@ -2,19 +2,23 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
+    <!-- Мета-тег для правильного отображения на мобильных устройствах -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>QR Scanner</title>
 
+    <!-- Подключаем API Telegram Web Apps -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <!-- Подключаем библиотеку для сканирования QR -->
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 
     <style>
+        /* Адаптация под тему Telegram */
         body {
             margin: 0;
             padding: 0;
             background-color: var(--tg-theme-bg-color, #ffffff);
             color: var(--tg-theme-text-color, #000000);
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -23,53 +27,27 @@
             overflow: hidden;
         }
 
-        #reader-container {
-            width: 100%;
-            max-width: 500px;
-            display: none; /* Скрываем сканер до нажатия кнопки */
-            flex-direction: column;
-            align-items: center;
-        }
-
         #reader {
             width: 100%;
+            max-width: 500px;
             border: none !important;
         }
 
+        /* Кастомизация интерфейса сканера */
         #reader video {
             border-radius: 16px;
             object-fit: cover;
         }
 
-        /* Красивая кнопка в стиле Telegram */
-        .tg-button {
-            background-color: var(--tg-theme-button-color, #2481cc);
-            color: var(--tg-theme-button-text-color, #ffffff);
-            border: none;
-            border-radius: 8px;
-            padding: 14px 24px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            transition: opacity 0.2s;
-            width: 80%;
-            max-width: 300px;
-        }
-
-        .tg-button:active {
-            opacity: 0.8;
-        }
-
         .status-text {
             margin-top: 20px;
-            font-size: 15px;
+            font-size: 16px;
             text-align: center;
             padding: 0 20px;
             color: var(--tg-theme-hint-color, #999999);
         }
 
-        /* Прячем лишний UI библиотеки */
+        /* Скрываем лишние элементы библиотеки html5-qrcode */
         #reader__dashboard_section_csr span,
         #reader__dashboard_section_swaplink {
             display: none !important;
@@ -78,46 +56,43 @@
 </head>
 <body>
 
-    <!-- Стартовый экран с кнопкой -->
-    <div id="start-screen" style="display: flex; flex-direction: column; align-items: center; width: 100%;">
-        <div style="font-size: 48px; margin-bottom: 20px;">📷</div>
-        <button class="tg-button" id="start-btn">Включить камеру</button>
-        <div class="status-text">Нажмите, чтобы отсканировать QR-код</div>
-    </div>
-
-    <!-- Экран сканера (изначально скрыт) -->
-    <div id="reader-container">
-        <div id="reader"></div>
-        <div class="status-text" id="status">Наведите камеру на QR-код</div>
-    </div>
+    <div id="reader"></div>
+    <div class="status-text" id="status">Наведите камеру на QR-код</div>
 
     <script>
+        // Инициализация Telegram Web App
         const tg = window.Telegram.WebApp;
+
+        // Разворачиваем приложение на весь экран
         tg.expand();
+
+        // Сообщаем Telegram, что приложение готово
         tg.ready();
 
         const statusEl = document.getElementById('status');
-        const startBtn = document.getElementById('start-btn');
-        const startScreen = document.getElementById('start-screen');
-        const readerContainer = document.getElementById('reader-container');
         let html5QrCode;
 
+        // Функция успешного сканирования
         function onScanSuccess(decodedText, decodedResult) {
+            // 1. Останавливаем сканер, чтобы не отправить код дважды
             html5QrCode.stop().then(() => {
+
+                // 2. Даем тактильный отклик (вибрация успеха)
                 tg.HapticFeedback.notificationOccurred('success');
                 statusEl.innerText = "Успешно! Отправка...";
                 statusEl.style.color = "var(--tg-theme-button-color, #2481cc)";
 
-                // Отправляем данные боту (закроет окно)
+                // 3. Отправляем данные в бота. 
+                // Метод sendData автоматически закрывает Web App после отправки!
                 tg.sendData(decodedText);
-            }).catch(err => console.error(err));
+
+            }).catch((err) => {
+                console.error("Ошибка остановки сканера", err);
+            });
         }
 
+        // Функция инициализации камеры
         function startScanner() {
-            // Прячем кнопку, показываем сканер
-            startScreen.style.display = 'none';
-            readerContainer.style.display = 'flex';
-
             html5QrCode = new Html5Qrcode("reader");
             const config = { 
                 fps: 10, 
@@ -125,24 +100,23 @@
                 aspectRatio: 1.0
             };
 
-            // Запускаем камеру
+            // Запускаем заднюю камеру
             html5QrCode.start(
                 { facingMode: "environment" }, 
                 config, 
                 onScanSuccess
             ).catch((err) => {
-                statusEl.innerText = "Ошибка доступа к камере. Разрешите доступ.";
+                // Если юзер запретил доступ к камере или камеры нет
+                statusEl.innerText = "Ошибка: Нет доступа к камере. Разрешите доступ в настройках устройства.";
                 statusEl.style.color = "var(--tg-theme-destructive-text-color, #ff3b30)";
+
+                // Вибрация ошибки
                 tg.HapticFeedback.notificationOccurred('error');
             });
         }
 
-        // Привязываем запуск к клику по кнопке!
-        startBtn.addEventListener('click', () => {
-            // Даем легкую вибрацию при нажатии на кнопку
-            tg.HapticFeedback.impactOccurred('light');
-            startScanner();
-        });
+        // Запускаем сканер при загрузке страницы
+        window.onload = startScanner;
     </script>
 </body>
 </html>
