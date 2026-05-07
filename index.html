@@ -1,30 +1,30 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html>
 <head>
-    <meta charset="UTF-8">
+    <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QR Scanner</title>
-    <!-- Подключаем API Телеграма -->
+    <!-- Подключаем скрипт Telegram WebApp -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body { background-color: var(--tg-theme-bg-color); color: var(--tg-theme-text-color); }
+    </style>
 </head>
 <body>
     <script>
-        // Инициализируем Web App
-        Telegram.WebApp.ready();
+        // Инициализируем WebApp
+        let tg = window.Telegram.WebApp;
+        tg.expand(); // Разворачиваем на весь экран (опционально)
 
-        // Вызываем встроенный сканер Telegram
-        Telegram.WebApp.showScanQrPopup({
-            text: "Наведите камеру на QR-код" // Текст-подсказка под сканером
-        }, function(text) {
-            // Эта функция сработает, когда код будет отсканирован
-            Telegram.WebApp.sendData(text); // Отправляем текст боту
-            Telegram.WebApp.close();        // Закрываем окно
-            return true; 
-        });
-
-        // Если пользователь закроет сканер, просто закрываем Web App
-        Telegram.WebApp.onEvent('scanQrPopupClosed', function() {
-            Telegram.WebApp.close();
+        // Вызываем нативный сканер QR
+        tg.showScanQrPopup({
+            text: "Наведите камеру на QR-код" // Текст под сканером
+        }, function(qrText) {
+            // Эта функция сработает, когда код отсканируется
+            if (qrText) {
+                // Отправляем текст QR-кода обратно в бота
+                tg.sendData(qrText);
+            }
+            return true; // Закрывает сканер после успешного считывания
         });
     </script>
 </body>
