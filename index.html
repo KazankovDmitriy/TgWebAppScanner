@@ -1,31 +1,57 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- Подключаем скрипт Telegram WebApp -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body { background-color: var(--tg-theme-bg-color); color: var(--tg-theme-text-color); }
+        body { 
+            background-color: var(--tg-theme-bg-color, #ffffff); 
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: sans-serif;
+        }
+        .btn {
+            background-color: var(--tg-theme-button-color, #3390ec);
+            color: var(--tg-theme-button-text-color, #ffffff);
+            border: none;
+            border-radius: 8px;
+            padding: 15px 30px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
-    <script>
-        // Инициализируем WebApp
-        let tg = window.Telegram.WebApp;
-        tg.expand(); // Разворачиваем на весь экран (опционально)
 
-        // Вызываем нативный сканер QR
-        tg.showScanQrPopup({
-            text: "Наведите камеру на QR-код" // Текст под сканером
-        }, function(qrText) {
-            // Эта функция сработает, когда код отсканируется
-            if (qrText) {
-                // Отправляем текст QR-кода обратно в бота
-                tg.sendData(qrText);
+    <button class="btn" onclick="openScanner()">Сканировать QR-код</button>
+
+    <script>
+        let tg = window.Telegram.WebApp;
+        tg.ready();
+        tg.expand(); 
+
+        function openScanner() {
+            if (tg.showScanQrPopup) {
+                tg.showScanQrPopup({
+                    text: "Наведите камеру на QR-код"
+                }, function(qrText) {
+                    if (qrText) {
+                        tg.sendData(qrText);
+                    }
+                    return true; 
+                });
             }
-            return true; // Закрывает сканер после успешного считывания
-        });
+        }
+
+        // Автозапуск сканера
+        setTimeout(() => {
+            openScanner();
+        }, 300);
     </script>
 </body>
 </html>
