@@ -1,64 +1,31 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html>
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Подключаем скрипт Telegram WebApp -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body { 
-            background-color: var(--tg-theme-bg-color, #ffffff); 
-            color: var(--tg-theme-text-color, #000000); 
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            font-family: sans-serif;
-        }
-        .btn {
-            background-color: var(--tg-theme-button-color, #3390ec);
-            color: var(--tg-theme-button-text-color, #ffffff);
-            border: none;
-            border-radius: 8px;
-            padding: 15px 30px;
-            font-size: 18px;
-            font-weight: bold;
-            cursor: pointer;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
+        body { background-color: var(--tg-theme-bg-color); color: var(--tg-theme-text-color); }
     </style>
 </head>
 <body>
-
-    <button class="btn" onclick="openScanner()">Запустить сканер</button>
-
     <script>
+        // Инициализируем WebApp
         let tg = window.Telegram.WebApp;
-        tg.ready();
-        tg.expand();
-    
-        // Тестовое уведомление: если оно появилось, значит скрипт работает
-        tg.showAlert("Скрипт загружен! Версия Telegram: " + tg.version);
-    
-        function openScanner() {
-            if (!tg.showScanQrPopup) {
-                tg.showAlert("Ошибка: showScanQrPopup не поддерживается на этом устройстве/клиенте.");
-                return;
+        tg.expand(); // Разворачиваем на весь экран (опционально)
+
+        // Вызываем нативный сканер QR
+        tg.showScanQrPopup({
+            text: "Наведите камеру на QR-код" // Текст под сканером
+        }, function(qrText) {
+            // Эта функция сработает, когда код отсканируется
+            if (qrText) {
+                // Отправляем текст QR-кода обратно в бота
+                tg.sendData(qrText);
             }
-    
-            tg.showAlert("Пытаюсь открыть камеру...");
-            
-            tg.showScanQrPopup({
-                text: "Наведите камеру на QR-код"
-            }, function(qrText) {
-                if (qrText) {
-                    tg.showAlert("Успех! Считано: " + qrText);
-                    tg.sendData(qrText);
-                }
-                return true; 
-            });
-        }
+            return true; // Закрывает сканер после успешного считывания
+        });
     </script>
 </body>
 </html>
