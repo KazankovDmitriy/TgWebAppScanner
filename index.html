@@ -1,31 +1,70 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- Подключаем скрипт Telegram WebApp -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body { background-color: var(--tg-theme-bg-color); color: var(--tg-theme-text-color); }
+        body { 
+            background-color: var(--tg-theme-bg-color, #ffffff); 
+            color: var(--tg-theme-text-color, #000000); 
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: sans-serif;
+        }
+        .btn {
+            background-color: var(--tg-theme-button-color, #3390ec);
+            color: var(--tg-theme-button-text-color, #ffffff);
+            border: none;
+            border-radius: 8px;
+            padding: 15px 30px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
     </style>
 </head>
 <body>
-    <script>
-        // Инициализируем WebApp
-        let tg = window.Telegram.WebApp;
-        tg.expand(); // Разворачиваем на весь экран (опционально)
 
-        // Вызываем нативный сканер QR
-        tg.showScanQrPopup({
-            text: "Наведите камеру на QR-код" // Текст под сканером
-        }, function(qrText) {
-            // Эта функция сработает, когда код отсканируется
-            if (qrText) {
-                // Отправляем текст QR-кода обратно в бота
-                tg.sendData(qrText);
+    <button class="btn" onclick="openScanner()">Запустить сканер</button>
+
+    <script>
+        let tg = window.Telegram.WebApp;
+
+        // 1. Обязательно сообщаем, что приложение готово
+        tg.ready();
+        tg.expand(); 
+
+        function openScanner() {
+            // Если версия Telegram старая и не поддерживает сканер
+            if (!tg.showScanQrPopup) {
+                tg.showAlert("Ваш Telegram не поддерживает сканирование QR-кодов. Пожалуйста, обновите приложение.");
+                return;
             }
-            return true; // Закрывает сканер после успешного считывания
-        });
+
+            // Вызываем нативный сканер
+            tg.showScanQrPopup({
+                text: "Наведите камеру на QR-код"
+            }, function(qrText) {
+                if (qrText) {
+                    // Отправляем данные в бота и автоматически закрываем WebApp
+                    tg.sendData(qrText);
+                }
+                return true; 
+            });
+        }
+
+        // 2. Пытаемся вызвать сканер автоматически через полсекунды
+        // Если ОС заблокирует это действие, у пользователя останется кнопка на экране
+        setTimeout(() => {
+            openScanner();
+        }, 500);
+
     </script>
 </body>
 </html>
